@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人主页 - Personal Homepage</title>
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.109/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.109/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 全屏按钮 -->
+    <button id="fullscreenBtn" class="fullscreen-btn" title="全屏显示">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M7,14H5v5h5v-2H7V14z M5,10h2V7h3V5H5V10z M17,17h-3v2h5v-5h-2V17z M14,5v2h3v3h2V5H14z"/>
+        </svg>
+    </button>
+
+    <!-- Cesium 容器 -->
+    <div id="cesiumContainer" class="cesium-container"></div>
+
+    <!-- 个人信息面板 -->
+    <div id="infoPanel" class="info-panel">
+        <div class="panel-content">
+            <div class="avatar">
+                <div class="avatar-placeholder">👤</div>
+            </div>
+            <h1 class="name">我的个人主页</h1>
+            <p class="title">Web Developer & 3D Enthusiast</p>
+            <div class="social-links">
+                <a href="#" class="social-link">GitHub</a>
+                <a href="#" class="social-link">LinkedIn</a>
+                <a href="#" class="social-link">Email</a>
+            </div>
+            <button id="togglePanel" class="toggle-btn">隐藏面板</button>
+        </div>
+    </div>
+
+    <!-- 控制面板 -->
+    <div id="controlPanel" class="control-panel">
+        <h3>地球控制</h3>
+        <button id="homeView" class="control-btn">回到主视图</button>
+        <button id="flyToLocation" class="control-btn">飞行到位置</button>
+        <div class="slider-group">
+            <label for="timeSlider">时间控制:</label>
+            <input type="range" id="timeSlider" min="0" max="100" value="50">
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
