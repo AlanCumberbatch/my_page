@@ -1,0 +1,13 @@
+name: Test Workflow
+
+on:
+  push:
+    branches: [ cursor/create-vue3-ts-cesium-project-with-globe-2036 ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Test step
+      run: echo "Hello World"
