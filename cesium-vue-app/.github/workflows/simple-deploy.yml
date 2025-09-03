@@ -2,7 +2,7 @@ name: Simple Deploy
 
 on:
   push:
-    branches: [ cursor/create-vue3-ts-cesium-project-with-globe-2036 ]
+    branches: [ main, cursor/create-vue3-ts-cesium-project-with-globe-2036 ]
 
 jobs:
   deploy:
