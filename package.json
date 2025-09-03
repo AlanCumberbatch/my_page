@@ -2,7 +2,7 @@
   "name": "cesium-vue-app",
   "version": "0.0.0",
   "private": true,
-  "homepage": "https://alancumberbatch.github.io/my_page/cesium-vue-app/",
+  "homepage": "https://alancumberbatch.github.io/my_page/",
   "type": "module",
   "engines": {
     "node": "^20.19.0 || >=22.12.0"

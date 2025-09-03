@@ -10,7 +10,7 @@ export default defineConfig({
     vue(),
     cesium(),
   ],
-  base: '/my_page/cesium-vue-app/',
+  base: '/my_page/',
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
