@@ -2,9 +2,9 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, cursor/create-vue3-ts-cesium-project-with-globe-2036 ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, master, cursor/create-vue3-ts-cesium-project-with-globe-2036 ]
 
 jobs:
   build-and-deploy:
@@ -28,7 +28,7 @@ jobs:
 
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
-      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/cursor/create-vue3-ts-cesium-project-with-globe-2036'
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./dist
