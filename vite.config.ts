@@ -10,7 +10,8 @@ export default defineConfig({
     vue(),
     cesium(),
   ],
-  base: process.env.NODE_ENV === 'production' ? '/my_page/' : '/',
+  // base: process.env.NODE_ENV === 'production' ? '/my_page/' : '/',
+  base: '/my_page/',
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))

@@ -110,7 +110,7 @@
             </div>
           </>
         )git
-      }
+      } de
       export default App
     ```
 
