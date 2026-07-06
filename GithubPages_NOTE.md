@@ -1,32 +1,44 @@
 # 步骤 1：初始化项目
+
 1. 创建 Vite + React + TypeScript 项目：
     打开终端并运行以下命令来创建一个 React + TypeScript 项目：
+
     ```bash
       npm create vite@latest my-app -- --template react-ts
       cd my-app
       yarn
     ```
+
 2. 安装依赖：
     接下来安装 Framer Motion 和 React Router：
+
     ```bash
       yarn add react-router-dom@6 framer-motion
     ```
+
     安装 Tailwind CSS
+
     ```bash
       yarn add -D tailwindcss postcss autoprefixer
     ```
+
     初始化项目中的 Tailwind CSS
+
     ```bash
       npx tailwindcss init -p
     ```
+
 3. 配置 Tailwind CSS：
     初始化 Tailwind 配置文件：
+
     ```bash
       npx tailwindcss init -p
     ```
+
     这会生成 tailwind.config.js 和 postcss.config.js 文件。
 4. 配置 Tailwind 在项目中生效：
     编辑 tailwind.config.js 文件，添加你的项目文件夹路径，以便 Tailwind 可以扫描到你的代码文件：
+
     ```ts
       /** @type {import('tailwindcss').Config} */
       export default {
@@ -40,8 +52,10 @@
         plugins: [],
       };
     ```
+
 5. 在 CSS 中导入 Tailwind：
     在 src/index.css 中添加以下内容来导入 Tailwind 基本样式：
+
     ```css
       @tailwind base;
       @tailwind components;
@@ -49,7 +63,9 @@
     ```
 
 # 步骤 2：添加示例页面（Framer Motion 动画的）
+
 1. Home
+
     ```ts
       // import React from 'react';
       import { motion } from 'framer-motion';
@@ -62,7 +78,9 @@
 
       export default Home;
     ```
+
 2. About
+
     ```ts
       // import React from 'react';
       import { motion } from 'framer-motion';
@@ -75,6 +93,7 @@
 
       export default About;
     ```
+
 # 步骤 3：添加基本路由
 
    ```ts
@@ -129,27 +148,33 @@
       )
    ```
 
-
-
 # 步骤 4：配置 GitHub Pages 部署
+
 1. 安装 gh-pages：
+
    ```bash
       yarn add gh-pages
    ```
+
 2. 添加发布脚本：
+
    ```json
       // 在 package.json 中添加
       "predeploy": "npm run build",
       "deploy": "gh-pages -d dist", // dist 是因为使用 vite， 如果打包后的文件名是 build，则写成built
    ```
+
 3. 配置 homepage：
+
    ```json
      // 在 package.json 中添加
      // alancumberbatch - - - 对应的 github 名字（全部小写字母）
      // test_ts         - - - 对应的仓库名称
     "homepage": "https://alancumberbatch.github.io/test_ts/",
    ```
+
 4. 配置 vit.config.ts
+
    ```ts
     export default defineConfig({
       ...
@@ -157,6 +182,7 @@
       ...
     })
    ```
+
 # 步骤 5：初始化 Git 仓库并推送到 GitHub
 
    ```ts
@@ -167,12 +193,12 @@
    ```
 
 # 步骤 6：发布到 GitHub Pages
+
 1. 发布项目：
+
     ```cmd
       yarn build
       yarn deploy
     ```
+
 2. 访问页面：具体地址去对应仓库的 settings/Pages 中查看
-
-
-

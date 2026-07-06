@@ -16,4 +16,15 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // 移除 manualChunks 配置，因为 Cesium 是外部模块
+      }
+    }
+  },
+  define: {
+    // 确保 Cesium 在全局范围内可用
+    'process.env': {}
+  }
 })

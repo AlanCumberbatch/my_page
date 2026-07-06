@@ -6,10 +6,10 @@
     <button
       class="reset-view-btn"
       @click="resetToInitialView"
-      title="重置到初始视角"
+      :title="getLocalizedText({ zh: '重置到初始视角', ja: '初期視点に戻す', en: 'Reset to initial view' })"
     >
       <span class="btn-icon">🌍</span>
-      <span class="btn-text">重置视角</span>
+      <span class="btn-text">{{ getLocalizedText({ zh: '重置视角', ja: '視点リセット', en: 'Reset View' }) }}</span>
       </button>
 
         <!-- 语言切换组件 -->
@@ -83,15 +83,19 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, computed, nextTick } from 'vue'
-import * as Cesium from 'cesium'
 import PopupModal from './PopupModal.vue'
 import ResumeContent from './ResumeContent.vue'
 import { colors } from '@/styles/colors'
+import * as Cesium from 'cesium'
+import 'cesium/Build/Cesium/Widgets/widgets.css'
 
-const viewer = ref<Cesium.Viewer | null>(null)
+const viewer = ref<any>(null)
 const selectedMarker = ref<any>(null)
 const popupPosition = ref({ x: 0, y: 0 })
 const showPopup = ref(false)
+
+// 存储转换后的locationMarkers
+let locationMarkers: any[] = []
 
 // 鼠标位置信息
 const mousePosition = ref({ longitude: 0, latitude: 0, height: 0 })
@@ -109,7 +113,7 @@ const languageOptions = [
 ]
 
 // 事件处理器引用
-let clickEventHandler: Cesium.ScreenSpaceEventHandler | null = null
+let clickEventHandler: any = null
 
 // 全局的 labelRefs 引用，用于事件处理器访问
 let globalLabelRefs: any[] = []
@@ -180,8 +184,8 @@ const createClickEventHandler = () => {
         const { entity, marker } = labelRef
         console.log('✅ 点击了标记点:', marker.name) // 添加调试日志
 
-        // 只允许东京标记点显示弹窗
-        if (marker.id === 'tokyo') {
+        // 允许东京、沈阳理工大学、北京龙科中芯科技显示弹窗
+        if (marker.id === 'tokyo' || marker.id === 'shenyang-university' || marker.id === 'loongson-tech') {
           // 显示当前标签
           entity.label!.show = new Cesium.ConstantProperty(true)
 
@@ -214,7 +218,7 @@ const createClickEventHandler = () => {
           })
         } else {
           // 其他标记点只飞行，不显示弹窗
-          console.log('🚫 非东京标记点，不显示弹窗:', marker.name)
+          console.log('🚫 此标记点不显示弹窗:', marker.name)
 
           // 飞行到标记点
           viewer.value!.camera.flyTo({
@@ -275,7 +279,7 @@ const resetToInitialView = () => {
         destination: Cesium.Cartesian3.fromDegrees(
           (minLon + maxLon) / 2,
           (minLat + maxLat) / 2,
-          currentHeight * 1.8
+          currentHeight * 2.0
         ),
         duration: 0.5, // 短时间的平滑过渡
         complete: () => {
@@ -287,8 +291,8 @@ const resetToInitialView = () => {
 
 }
 
-// 定义地理位置标记点
-const locationMarkers = [
+// 定义地理位置标记点（使用字符串颜色，Cesium加载后再转换）
+const locationMarkersData = [
   {
     id: 'shenyang-university',
     // 多语言支持
@@ -300,11 +304,11 @@ const locationMarkers = [
     longitude: 123.49117708088355,
     latitude: 41.72701912960851,
     description: {
-      zh: '沈阳理工大学 - 位于辽宁省沈阳市',
-      ja: '瀋陽理工大学 - 遼寧省瀋陽市に位置',
-      en: 'Shenyang University of Technology - Located in Shenyang, Liaoning Province'
+      zh: '位于辽宁省沈阳市',
+      ja: '遼寧省瀋陽市に位置',
+      en: 'Located in Shenyang, Liaoning Province'
     },
-    color: Cesium.Color.fromCssColorString(colors.cesium.university), // 橙色
+    colorString: colors.cesium.university, // 橙色
     icon: '🏫',
     type: 'university',
     // 简历数据
@@ -316,14 +320,14 @@ const locationMarkers = [
           en: 'Shenyang University of Technology'
         },
         period: {
-          zh: '2018年4月 - 2022年3月',
-          ja: '2018年4月 - 2022年3月',
+          zh: '2014年9月 - 2020年6月',
+          ja: '2014年9月 - 2020年6月',
           en: 'April 2018 - March 2022'
         },
         field: {
-          zh: '信息工程・软件开发',
-          ja: '情報工学・ソフトウェア開発',
-          en: 'Information Engineering & Software Development'
+          zh: '探测制导与控制技术',
+          ja: '探査誘導制御技術',
+          en: 'Detection, Guidance and Control Technology'
         },
         type: {
           zh: '国立理工系大学',
@@ -357,14 +361,17 @@ const locationMarkers = [
       },
       activities: {
         zh: [
+          '服兵役两年（2016年-2018年）',
           '编程社团参加',
           '实习（IT企业）'
         ],
         ja: [
+          '兵役2年間（2016年-2018年）',
           'プログラミングサークル参加',
           'インターンシップ（IT企業）'
         ],
         en: [
+          'Military Service - 2 Years (2016-2018)',
           'Programming Club Participation',
           'Internship (IT Company)'
         ]
@@ -374,22 +381,19 @@ const locationMarkers = [
           '编程语言：C++, JavaScript',
           '框架： Vue.js, React',
           '数据库：MySQL, PostgreSQL, MongoDB',
-          '开发工具：Git, VSCode, Markdown',
-          '语言：日语，英语'
+          '开发工具：Git, VSCode, Markdown'
         ],
         ja: [
           'プログラミング言語：C++, JavaScript',
           'フレームワーク：Vue.js, React',
           'データベース：MySQL, PostgreSQL, MongoDB',
-          '開発ツール：Git, VSCode, Markdown',
-          '言語：日本語、英語'
+          '開発ツール：Git, VSCode, Markdown'
         ],
         en: [
           'Programming Languages: C++, JavaScript',
           'Frameworks: Vue.js, React',
           'Databases: MySQL, PostgreSQL, MongoDB',
-          'Development Tools: Git, VSCode, Markdown',
-          'Languages: Japanese, English'
+          'Development Tools: Git, VSCode, Markdown'
         ]
       },
       projects: {
@@ -408,299 +412,41 @@ const locationMarkers = [
       }
     }
   },
-  {
-    // 41.739075, 123.410952
-    id: 'ai-tech-company',
-    name: {
-      zh: '1- 沈阳市艾尔时代科技公司',
-      ja: '1- 瀋陽市エール時代科技公司',
-      en: '1- Shenyang AI Era Technology Co., Ltd.'
-    },
-    longitude: 123.410952,
-    latitude: 41.739075,
-    description: {
-      zh: '沈阳市艾尔时代科技公司 - 科技企业',
-      ja: '瀋陽市エール時代科技公司 - 科技企業',
-      en: 'Shenyang AI Era Technology Co., Ltd. - Technology Company'
-    },
-    color: Cesium.Color.fromCssColorString(colors.cesium.company1), // 深蓝
-    icon: '🏢',
-    type: 'company',
-    // 简历数据
-    resumeData: {
-      basicInfo: {
-        organization: {
-          zh: '沈阳市艾尔时代科技公司',
-          ja: '瀋陽市エール時代科技公司',
-          en: 'Shenyang AI Era Technology Co., Ltd.'
-        },
-        period: {
-          zh: '2020年1月 - 2020年4月',
-          ja: '2020年1月 - 2020年4月',
-          en: 'January 2020 - April 2020'
-        },
-        field: {
-          zh: 'IT・软件开发',
-          ja: 'IT・ソフトウェア開発',
-          en: 'IT & Software Development'
-        },
-        type: {
-          zh: 'IT・软件开发企业',
-          ja: 'IT・ソフトウェア開発企業',
-          en: 'IT & Software Development Company'
-        }
-      },
-      academic: {
-        gpa: 'N/A',
-        degree: 'N/A',
-        thesis: 'N/A',
-        qualifications: '基本情報技術者試験、AWS認定資格'
-      },
-      // 工作经历详情
-      workExperience: {
-        role: {
-          zh: '前端开发工程师',
-          ja: 'フロントエンド開発エンジニア',
-          en: 'Frontend Development Engineer'
-        },
-        department: {
-          zh: '技术开发部',
-          ja: '技術開発部',
-          en: 'Technology Development Department'
-        },
-        responsibilities: {
-          zh: [
-            '与产品、UI、后端、测试协作一起完成开发任务',
-            '封装Axios方法，进行后台数据收发',
-            '使用G2进行数据2D可视化展示',
-            '实现浏览器中根据实时数据打印报销单',
-            '实现公司内部第一次在项目中引入高德地图'
-          ],
-          ja: [
-            'プロダクト、UI、バックエンド、テストと協力して開発タスクを完了',
-            'Axiosメソッドをカプセル化し、バックエンドデータの送受信を実装',
-            'G2を使用してデータ2D可視化を実装',
-            'ブラウザでリアルタイムデータに基づく経費精算書印刷を実現',
-            '会社内初の高德地図プロジェクト導入を実現'
-          ],
-          en: [
-            'Collaborated with product, UI, backend, and testing teams to complete development tasks',
-            'Encapsulated Axios methods for backend data transmission',
-            'Implemented 2D data visualization using G2',
-            'Achieved real-time data-based expense report printing in browser',
-            'Successfully introduced Amap (高德地图) for the first time in company projects'
-          ]
-        },
-        achievements: {
-          zh: [
-            '成功封装Axios方法，提升数据交互效率30%',
-            '实现G2数据可视化，为业务决策提供直观支持',
-            '创新性地在Web系统中实现报销单直接打印功能',
-            '首次引入高德地图API，为外出拜访路径管理提供技术支持',
-            '与多部门协作，确保项目按时交付，获得团队好评'
-          ],
-          ja: [
-            'Axiosメソッドのカプセル化に成功、データインタラクション効率30%向上',
-            'G2データ可視化を実現、ビジネス意思決定に直感的サポートを提供',
-            'Webシステム内での経費精算書直接印刷機能を革新的に実現',
-            '初めて高德地図APIを導入、外出訪問ルート管理に技術サポートを提供',
-            '多部門との協力により、プロジェクト納期遵守、チームから高評価を獲得'
-          ],
-          en: [
-            'Successfully encapsulated Axios methods, improving data interaction efficiency by 30%',
-            'Implemented G2 data visualization, providing intuitive support for business decision-making',
-            'Innovatively achieved direct expense report printing functionality within web system',
-            'First-time introduction of Amap API, providing technical support for field visit route management',
-            'Collaborated with multiple departments to ensure on-time project delivery, received team recognition'
-          ]
-        }
-      },
-
-      // 项目经验详情
-      projects: [
-        {
-          name: {
-            zh: '企业管理系统前端开发',
-            ja: '企業管理システムフロントエンド開発',
-            en: 'Enterprise Management System Frontend Development'
-          },
-          period: {
-            zh: '2020年1月 - 2020年4月',
-            ja: '2020年1月 - 2020年4月',
-            en: 'January 2020 - April 2020'
-          },
-          role: {
-            zh: '前端开发工程师',
-            ja: 'フロントエンド開発エンジニア',
-            en: 'Frontend Development Engineer'
-          },
-          description: {
-            zh: '负责企业管理系统前端开发，包括页面开发、数据可视化、地图集成和打印功能实现，使用Vue2框架结合公司内部UI组件库进行开发',
-            ja: '企業管理システムのフロントエンド開発を担当。ページ開発、データ可視化、地図統合、印刷機能実装を含み、Vue2フレームワークと社内UIコンポーネントライブラリを使用して開発',
-            en: 'Responsible for enterprise management system frontend development, including page development, data visualization, map integration, and printing functionality implementation using Vue2 framework combined with internal UI component library'
-          },
-          technologies: {
-            zh: 'Vue2, JavaScript, Axios, G2, 高德地图API, 公司内部UI组件库',
-            ja: 'Vue2, JavaScript, Axios, G2, 高德地図API, 社内UIコンポーネントライブラリ',
-            en: 'Vue2, JavaScript, Axios, G2, Amap API, Internal UI Component Library'
-          },
-          achievements: {
-            zh: [
-              '依据UI设计，使用Vue2结合公司内部UI组件库完成页面开发',
-              '基于封装的Axios与后端进行接口调试，确保数据交互稳定',
-              '创建数据字典进行数据标准化，有效减少数据传输量40%',
-              '使用G2实现数据2D可视化，提升数据展示效果',
-              '集成高德地图API实现外出拜访路径回显功能',
-              '实现在Web系统内部直接打印报销单，提升办公效率'
-            ],
-            ja: [
-              'UI設計に基づき、Vue2と社内UIコンポーネントライブラリを使用してページ開発を完了',
-              'カプセル化されたAxiosを使用してバックエンドとのインターフェースデバッグを実施、データインタラクションの安定性を確保',
-              'データ辞書を作成してデータ標準化を実現、データ転送量40%削減',
-              'G2を使用してデータ2D可視化を実現、データ表示効果を向上',
-              '高德地図APIを統合して外出訪問ルート表示機能を実現',
-              'Webシステム内での経費精算書直接印刷を実現、オフィス効率を向上'
-            ],
-            en: [
-              'Completed page development using Vue2 combined with internal UI component library based on UI design',
-              'Conducted interface debugging with backend using encapsulated Axios, ensuring stable data interaction',
-              'Created data dictionary for data standardization, effectively reducing data transmission by 40%',
-              'Implemented 2D data visualization using G2, improving data presentation effectiveness',
-              'Integrated Amap API to achieve field visit route display functionality',
-              'Achieved direct expense report printing within web system, improving office efficiency'
-            ]
-          }
-        }
-      ],
-
-      // 技能分类
-      skills: {
-        technical: {
-          zh: [
-            '前端技术：Vue2, JavaScript, HTML5, CSS3',
-            '数据可视化：G2图表库, 数据可视化设计',
-            '地图开发：高德地图API, 地图集成与路径规划',
-            '网络请求：Axios封装, RESTful API调用',
-            '打印技术：浏览器打印API, 动态内容打印'
-          ],
-          ja: [
-            'フロントエンド技術：Vue2, JavaScript, HTML5, CSS3',
-            'データ可視化：G2チャートライブラリ、データ可視化設計',
-            '地図開発：高德地図API、地図統合・ルート計画',
-            'ネットワークリクエスト：Axiosカプセル化、RESTful API呼び出し',
-            '印刷技術：ブラウザ印刷API、動的コンテンツ印刷'
-          ],
-          en: [
-            'Frontend Technologies: Vue2, JavaScript, HTML5, CSS3',
-            'Data Visualization: G2 Chart Library, Data Visualization Design',
-            'Map Development: Amap API, Map Integration & Route Planning',
-            'Network Requests: Axios Encapsulation, RESTful API Calls',
-            'Printing Technology: Browser Print API, Dynamic Content Printing'
-          ]
-        },
-        tools: {
-          zh: [
-            '开发工具：VS Code, Git, Chrome DevTools',
-            'UI组件：公司内部UI组件库, Element UI',
-            '数据可视化：G2, ECharts',
-            '地图服务：高德地图API, 地图JavaScript API',
-            '项目管理：团队协作, 跨部门沟通'
-          ],
-          ja: [
-            '開発ツール：VS Code, Git, Chrome DevTools',
-            'UIコンポーネント：社内UIコンポーネントライブラリ、Element UI',
-            'データ可視化：G2, ECharts',
-            '地図サービス：高德地図API、地図JavaScript API',
-            'プロジェクト管理：チーム協力、部門横断コミュニケーション'
-          ],
-          en: [
-            'Development Tools: VS Code, Git, Chrome DevTools',
-            'UI Components: Internal UI Component Library, Element UI',
-            'Data Visualization: G2, ECharts',
-            'Map Services: Amap API, Map JavaScript API',
-            'Project Management: Team Collaboration, Cross-department Communication'
-          ]
-        },
-        languages: {
-          zh: [
-            '中文：母语水平',
-            '日语：N2水平，技术文档阅读',
-            '英语：CET-4，基础技术交流'
-          ],
-          ja: [
-            '中国語：母語レベル',
-            '日本語：N2レベル、技術文書読解',
-            '英語：CET-4、基礎技術交流'
-          ],
-          en: [
-            'Chinese: Native level',
-            'Japanese: N2 level, technical documentation reading',
-            'English: CET-4, basic technical communication'
-          ]
-        }
-      },
-
-      // 特殊贡献/创新
-      contributions: {
-        innovations: {
-          zh: [
-            '创新性地在Web系统中实现报销单直接打印功能，提升办公效率',
-            '首次在公司项目中引入高德地图API，为外出拜访管理提供技术支持',
-            '封装Axios方法，建立统一的数据交互标准，提升开发效率',
-            '使用G2实现数据可视化，为业务决策提供直观的数据支持'
-          ],
-          ja: [
-            'Webシステム内での経費精算書直接印刷機能を革新的に実現、オフィス効率を向上',
-            '会社プロジェクトで初めて高德地図APIを導入、外出訪問管理に技術サポートを提供',
-            'Axiosメソッドをカプセル化し、統一されたデータインタラクション標準を確立、開発効率を向上',
-            'G2を使用してデータ可視化を実現、ビジネス意思決定に直感的なデータサポートを提供'
-          ],
-          en: [
-            'Innovatively achieved direct expense report printing functionality in web system, improving office efficiency',
-            'First-time introduction of Amap API in company projects, providing technical support for field visit management',
-            'Encapsulated Axios methods, established unified data interaction standards, improving development efficiency',
-            'Implemented data visualization using G2, providing intuitive data support for business decision-making'
-          ]
-        },
-        leadership: {
-          zh: [
-            '与产品、UI、后端、测试团队紧密协作，确保项目顺利推进',
-            '主动学习新技术，将高德地图API成功集成到项目中',
-            '建立数据字典标准，为团队数据交互提供规范',
-            '参与跨部门沟通，确保技术方案满足业务需求'
-          ],
-          ja: [
-            'プロダクト、UI、バックエンド、テストチームと緊密に協力し、プロジェクトの順調な推進を確保',
-            '新技術を積極的に学習し、高德地図APIをプロジェクトに成功統合',
-            'データ辞書標準を確立し、チームのデータインタラクションに規範を提供',
-            '部門横断コミュニケーションに参加し、技術ソリューションがビジネス要件を満たすよう確保'
-          ],
-          en: [
-            'Closely collaborated with product, UI, backend, and testing teams to ensure smooth project progression',
-            'Proactively learned new technologies, successfully integrated Amap API into projects',
-            'Established data dictionary standards, providing guidelines for team data interaction',
-            'Participated in cross-department communication to ensure technical solutions meet business requirements'
-          ]
-        }
-      }
-    }
-  },
+  // {
+  //   // 41.739075, 123.410952
+  //   id: 'ai-tech-company',
+  //   name: {
+  //     zh: '1- 沈阳市艾尔时代科技公司',
+  //     ja: '1- 瀋陽市エール時代科技公司',
+  //     en: '1- Shenyang AI Era Technology Co., Ltd.'
+  //   },
+  //   longitude: 123.410952,
+  //   latitude: 41.739075,
+  //   description: {
+  //     zh: '沈阳市艾尔时代科技公司 - 科技企业',
+  //     ja: '瀋陽市エール時代科技公司 - 科技企業',
+  //     en: 'Shenyang AI Era Technology Co., Ltd. - Technology Company'
+  //   },
+  //   colorString: colors.cesium.company1, // 深蓝
+  //   icon: '🏢',
+  //   type: 'company',
+  // },
   {
     // 40.0598665273991, 116.17430093708816
     id: 'loongson-tech',
     name: {
-      zh: '2- 北京龙科中芯科技',
-      ja: '2- 北京龍科中芯科技',
-      en: '2- Beijing Longke Zhongxin Technology'
+      zh: '1- 北京龙科中芯科技',
+      ja: '1- 北京龍科中芯科技',
+      en: '1- Beijing Longke Zhongxin Technology'
     },
     longitude: 116.17430093708816,
     latitude: 40.0598665273991,
     description: {
-      zh: '北京龙科中芯科技 - 芯片技术公司',
-      ja: '北京龍科中芯科技 - チップ技術会社',
-      en: 'Beijing Longke Zhongxin Technology - Chip Technology Company'
+      zh: '北京市海淀区中关村软件园',
+      ja: '北京市海淀区中関村ソフトウェアパーク',
+      en: 'Zhongguancun Software Park, Haidian District, Beijing'
     },
-    color: Cesium.Color.fromCssColorString(colors.cesium.company2), // 酒红
+    colorString: colors.cesium.company2, // 酒红
     icon: '💻',
     type: 'company',
     // 简历数据
@@ -712,14 +458,14 @@ const locationMarkers = [
           en: 'Beijing Longke Zhongxin Technology'
         },
         period: {
-          zh: '2020年4月 - 2020年4月',
-          ja: '2020年4月 - 2020年4月',
-          en: 'April 2020 - April 2020'
+          zh: '2020年4月 - 2022年4月',
+          ja: '2020年4月 - 2022年4月',
+          en: 'April 2020 - April 2022'
         },
         field: {
-          zh: '半导体・硬件开发',
-          ja: '半導体・ハードウェア開発',
-          en: 'Semiconductor & Hardware Development'
+          zh: '软件工程师',
+          ja: 'ソフトウェアエンジニア',
+          en: 'Software Engineer'
         },
         type: {
           zh: '半导体・硬件开发企业',
@@ -766,15 +512,15 @@ const locationMarkers = [
       skills: {
         zh: [
           '编程语言：C, C++, JavaScript, Shader/GLSL',
-          '开发工具：Git, Make, 调试器, Shader Editor'
+          '开发工具：Git, Make, Shader Editor'
         ],
         ja: [
           'プログラミング言語：C, C++, JavaScript, Shader/GLSL',
-          '開発ツール：Git, Make, デバッガー, Shader Editor'
+          '開発ツール：Git, Make, Shader Editor'
         ],
         en: [
           'Programming Languages: C, C++, JavaScript, Shader/GLSL',
-          'Development Tools: Git, Make, Debugger, Shader Editor'
+          'Development Tools: Git, Make, Shader Editor'
         ]
       },
       projects: {
@@ -797,9 +543,9 @@ const locationMarkers = [
     // 39.93420597170334, 116.30932090962676
     id: 'thunder-tech',
     name: {
-      zh: '3- 雷象科技(北京)',
-      ja: '3- 雷象科技(北京)',
-      en: '3- Thunder Elephant Technology (Beijing)'
+      zh: '2- 雷象科技(北京)',
+      ja: '2- 雷象科技(北京)',
+      en: '2- Thunder Elephant Technology (Beijing)'
     },
     longitude: 116.303646,
     latitude: 39.934120,
@@ -808,7 +554,7 @@ const locationMarkers = [
       ja: '雷象科技(北京) - 科技会社',
       en: 'Thunder Elephant Technology (Beijing) - Technology Company'
     },
-    color: Cesium.Color.fromCssColorString(colors.cesium.company3), // 浅紫
+    colorString: colors.cesium.company3, // 浅紫
     icon: '🚀',
     type: 'company',
     // 简历数据
@@ -1070,7 +816,7 @@ const locationMarkers = [
           zh: [
             '中文：母语水平',
             '日语：N1水平，商务会话流利',
-            '英语：CET-6，技术文档阅读和写作熟练'
+            '英语：CET-612312，技术文档阅读和写作熟练'
           ],
           ja: [
             '中国語：母語レベル',
@@ -1134,9 +880,9 @@ const locationMarkers = [
     // 35.67532479622418, 139.56860153825758
     id: 'tokyo',
     name: {
-      zh: '4- 东京',
-      ja: '4- 東京',
-      en: '4- Tokyo'
+      zh: '3- 东京',
+      ja: '3- 東京',
+      en: '3- Tokyo'
     },
     longitude: 139.56860153825758,
     latitude: 35.67532479622418,
@@ -1145,7 +891,7 @@ const locationMarkers = [
       ja: '東京 - 語学学習・AWS技術独学',
       en: 'Tokyo - Language Learning & AWS Technology Self-Study'
     },
-    color: Cesium.Color.fromCssColorString(colors.cesium.university), // 使用橙色
+    colorString: colors.cesium.university, // 使用橙色
     icon: '🗼',
     type: 'city',
     // 简历数据
@@ -1200,13 +946,25 @@ const locationMarkers = [
 
       // 求职目标
       careerGoals: {
-        target: {
-          zh: 'AWS相关岗位',
-          ja: 'AWS関連ポジション',
-          en: 'AWS-related Positions'
+        positions: {
+          zh: [
+            'Web前端工程师（5年经验）',
+            'Cesium开发工程师（5年经验）',
+            'AWS相关岗位（正在学习中）'
+          ],
+          ja: [
+            'Webフロントエンドエンジニア（5年経験）',
+            'Cesium開発エンジニア（5年経験）',
+            'AWS関連ポジション（学習中）'
+          ],
+          en: [
+            'Web Frontend Engineer (5 Years Experience)',
+            'Cesium Development Engineer (5 Years Experience)',
+            'AWS-related Positions (Currently Learning)'
+          ]
         },
         companyType: {
-          zh: '日本人公司的派遣或正社员岗位',
+          zh: '日本企业的派遣或正社员岗位',
           ja: '日本企業の派遣または正社員ポジション',
           en: 'Japanese Company Dispatch or Full-time Employee Positions'
         },
@@ -1308,18 +1066,21 @@ const locationMarkers = [
         languages: {
           zh: [
             '中文：母语水平',
-            '日语：基础会话，可以表达自己想法和意图，后续会不断充实',
-            '英语：流利沟通'
+            '日语：N2水平（备考N1中）- 可进行日常会话与基础业务交流',
+            // '英语：CET-6、托业750分 - 可阅读技术文档，进行书面和口头交流'
+            '英语：可阅读技术文档，进行书面和口头交流'
           ],
           ja: [
             '中国語：母語レベル',
-            '日本語：基礎会話、自分の考えや意図を表現可能、今後も継続的に向上',
-            '英語：流暢なコミュニケーション'
+            '日本語：N2レベル（N1受験準備中）- 日常会話・基礎ビジネス会話可能',
+            // '英語：CET-6、TOEIC 750点 - 技術文書読解、書面・口頭コミュニケーション可能'
+            '英語：技術文書読解、書面・口頭コミュニケーション可能'
           ],
           en: [
             'Chinese: Native level',
-            'Japanese: Basic conversation, can express thoughts and intentions, will continue to improve',
-            'English: Fluent communication'
+            'Japanese: N2 level (preparing for N1) - Daily conversation and basic business communication',
+            // 'English: CET-6, TOEIC 750 - Technical documentation reading, written and verbal communication'
+            'English: Technical documentation reading, written and verbal communication'
           ]
         },
         soft: {
@@ -1344,31 +1105,170 @@ const locationMarkers = [
         }
       },
 
-      // 学习项目
-      learningProjects: [
-        {
-          name: {
-            zh: 'AWS云服务学习项目',
-            ja: 'AWSクラウドサービス学習プロジェクト',
-            en: 'AWS Cloud Services Learning Project'
-          },
-          period: {
-            zh: '2024年5月 - 現在',
-            ja: '2024年5月 - 現在',
-            en: 'May 2024 - Present'
+      // 个人项目链接
+      links: {
+        awsBlog: {
+          url: 'https://alancumberbatch.github.io/aws_blog/',
+          title: {
+            zh: 'AWS技术学习博客',
+            ja: 'AWS技術学習ブログ',
+            en: 'AWS Technology Learning Blog'
           },
           description: {
-            zh: '系统学习AWS云服务相关知识，包括EC2、S3、Lambda、RDS等核心服务，为求职AWS相关岗位做准备',
-            ja: 'AWSクラウドサービス関連知識を体系的に学習。EC2、S3、Lambda、RDSなどのコアサービスを含み、AWS関連ポジション求職の準備',
-            en: 'Systematically learning AWS cloud services knowledge, including core services like EC2, S3, Lambda, RDS, preparing for AWS-related job applications'
+            zh: '记录AWS学习心得、技术总结与实践经验',
+            ja: 'AWS学習体験、技術まとめ・実践経験を記録',
+            en: 'Recording AWS learning experiences, technical summaries and practical insights'
+          }
+        },
+        personalPage: {
+          url: 'https://alancumberbatch.github.io/MarquezSpace',
+          title: {
+            zh: '个人主页 - 技术简历与项目展示',
+            ja: '個人ホームページ - 技術履歴書・プロジェクト紹介',
+            en: 'Personal Homepage - Technical Resume & Project Showcase'
           },
-          link: {
-            zh: 'https://github.com/your-username/aws-learning-project',
-            ja: 'https://github.com/your-username/aws-learning-project',
-            en: 'https://github.com/your-username/aws-learning-project'
+          description: {
+            zh: '使用Cesium、Vue3构建的3D交互式简历展示页面',
+            ja: 'Cesium、Vue3で構築した3Dインタラクティブ履歴書ページ',
+            en: '3D interactive resume page built with Cesium and Vue3'
+          }
+        },
+        github: {
+          url: 'https://github.com/AlanCumberbatch/cesium-',
+          title: {
+            zh: 'GitHub 项目仓库',
+            ja: 'GitHub プロジェクトリポジトリ',
+            en: 'GitHub Project Repository'
+          },
+          description: {
+            zh: '开源项目与代码示例',
+            ja: 'オープンソースプロジェクト・コードサンプル',
+            en: 'Open source projects and code samples'
           }
         }
-      ],
+      },
+
+      // // 学习项目与已完成项目
+      // projects: [
+      //   // {
+      //   //   name: {
+      //   //     zh: 'Cesium 3D地球简历展示系统',
+      //   //     ja: 'Cesium 3D地球履歴書表示システム',
+      //   //     en: 'Cesium 3D Globe Resume System'
+      //   //   },
+      //   //   type: 'personal',
+      //   //   period: {
+      //   //     zh: '2024年10月 - 现在',
+      //   //     ja: '2024年10月 - 現在',
+      //   //     en: 'October 2024 - Present'
+      //   //   },
+      //   //   description: {
+      //   //     zh: '使用Cesium.js + Vue3构建的3D交互式简历展示系统，通过地球上的标记点展示个人经历、技能和项目',
+      //   //     ja: 'Cesium.js + Vue3で構築した3Dインタラクティブ履歴書表示システム、地球上のマーカーで個人経歴・スキル・プロジェクトを表示',
+      //   //     en: '3D interactive resume system built with Cesium.js + Vue3, displaying personal experience, skills and projects through markers on globe'
+      //   //   },
+      //   //   technologies: {
+      //   //     zh: 'Cesium.js, Vue3, TypeScript, Vite',
+      //   //     ja: 'Cesium.js, Vue3, TypeScript, Vite',
+      //   //     en: 'Cesium.js, Vue3, TypeScript, Vite'
+      //   //   },
+      //   //   features: {
+      //   //     zh: [
+      //   //       '3D地球可视化展示',
+      //   //       '多语言支持（中文、日语、英语）',
+      //   //       '交互式标记点与弹窗',
+      //   //       '响应式设计',
+      //   //       'GitHub Pages部署'
+      //   //     ],
+      //   //     ja: [
+      //   //       '3D地球可視化表示',
+      //   //       '多言語サポート（中国語、日本語、英語）',
+      //   //       'インタラクティブマーカー・ポップアップ',
+      //   //       'レスポンシブデザイン',
+      //   //       'GitHub Pagesデプロイ'
+      //   //     ],
+      //   //     en: [
+      //   //       '3D globe visualization',
+      //   //       'Multi-language support (Chinese, Japanese, English)',
+      //   //       'Interactive markers and popups',
+      //   //       'Responsive design',
+      //   //       'GitHub Pages deployment'
+      //   //     ]
+      //   //   },
+      //   //   link: 'https://alancumberbatch.github.io/my_page/',
+      //   //   github: 'https://github.com/AlanCumberbatch/my_page'
+      //   // },
+      //   {
+      //     name: {
+      //       zh: 'AWS学习博客网站',
+      //       ja: 'AWS学習ブログサイト',
+      //       en: 'AWS Learning Blog Site'
+      //     },
+      //     type: 'learning',
+      //     period: {
+      //       zh: '2024年5月 - 现在',
+      //       ja: '2024年5月 - 現在',
+      //       en: 'May 2024 - Present'
+      //     },
+      //     description: {
+      //       zh: '记录AWS云服务学习过程的技术博客，包括EC2、S3、Lambda等服务的实践经验和学习心得',
+      //       ja: 'AWSクラウドサービス学習過程を記録する技術ブログ、EC2、S3、Lambdaなどのサービスの実践経験・学習体験を含む',
+      //       en: 'Technical blog recording AWS cloud services learning process, including practical experience with EC2, S3, Lambda and other services'
+      //     },
+      //     technologies: {
+      //       zh: 'AWS, Markdown, GitHub Pages',
+      //       ja: 'AWS, Markdown, GitHub Pages',
+      //       en: 'AWS, Markdown, GitHub Pages'
+      //     },
+      //     link: 'https://alancumberbatch.github.io/blog/'
+      //   },
+      //   // {
+      //   //   name: {
+      //   //     zh: '企业管理系统（Vue2项目）',
+      //   //     ja: '企業管理システム（Vue2プロジェクト）',
+      //   //     en: 'Enterprise Management System (Vue2 Project)'
+      //   //   },
+      //   //   type: 'work',
+      //   //   period: {
+      //   //     zh: '2020年1月 - 2020年4月',
+      //   //     ja: '2020年1月 - 2020年4月',
+      //   //     en: 'January 2020 - April 2020'
+      //   //   },
+      //   //   description: {
+      //   //     zh: '使用Vue2开发的企业管理系统前端，包含数据可视化、地图集成、打印功能等模块',
+      //   //     ja: 'Vue2で開発した企業管理システムのフロントエンド、データ可視化・地図統合・印刷機能などのモジュールを含む',
+      //   //     en: 'Enterprise management system frontend developed with Vue2, including data visualization, map integration, printing features'
+      //   //   },
+      //   //   technologies: {
+      //   //     zh: 'Vue2, Axios, G2, 高德地图API',
+      //   //     ja: 'Vue2, Axios, G2, 高德地図API',
+      //   //     en: 'Vue2, Axios, G2, Amap API'
+      //   //   },
+      //   //   features: {
+      //   //     zh: [
+      //   //       'G2数据可视化图表',
+      //   //       '高德地图路径规划',
+      //   //       'Web端报销单打印',
+      //   //       '数据字典标准化',
+      //   //       'Axios请求封装'
+      //   //     ],
+      //   //     ja: [
+      //   //       'G2データ可視化チャート',
+      //   //       '高德地図ルート計画',
+      //   //       'Web端末経費精算書印刷',
+      //   //       'データ辞書標準化',
+      //   //       'Axiosリクエストカプセル化'
+      //   //     ],
+      //   //     en: [
+      //   //       'G2 data visualization charts',
+      //   //       'Amap route planning',
+      //   //       'Web-based expense report printing',
+      //   //       'Data dictionary standardization',
+      //   //       'Axios request encapsulation'
+      //   //     ]
+      //   //   }
+      //   // }
+      // ],
 
       // 特殊贡献/创新
       contributions: {
@@ -1724,6 +1624,29 @@ onMounted(async () => {
   const container = document.getElementById('cesiumContainer')
   console.log('📦 容器检查:', container ? '✅ 存在' : '❌ 不存在')
 
+  // 设置 Cesium Ion 访问令牌（如果需要使用Cesium Ion服务）
+  // 从环境变量读取 TOKEN，或使用默认的公共 TOKEN
+  // const cesiumToken = import.meta.env.VITE_CESIUM_ION_TOKEN
+  const cesiumToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI5ODk1NmMwNC02MjYwLTQyZWUtYTIxMy1lMjgwMTA3NWE1MmIiLCJpZCI6NDI2NzgsImlhdCI6MTYxMTcwOTEzMH0.DwVnaNdLhZd8miWzYmC9O2k2F4_ODdrWU3EFZRbOWLo';
+  if (cesiumToken) {
+    Cesium.Ion.defaultAccessToken = cesiumToken
+    console.log('✅ Cesium Ion Token 已设置')
+  } else {
+    console.log('⚠️ 未设置 Cesium Ion Token，将使用默认配置')
+  }
+
+  // Cesium已通过import导入，转换locationMarkersData为locationMarkers
+  try {
+    locationMarkers = locationMarkersData.map(marker => ({
+      ...marker,
+      color: Cesium.Color.fromCssColorString(marker.colorString)
+    }))
+    console.log('✅ locationMarkers 已转换完成')
+  } catch (error) {
+    console.error('❌ locationMarkers 转换失败:', error)
+    return
+  }
+
   // 初始化Cesium Viewer
   console.log('🔧 创建Cesium Viewer...')
   try {
@@ -1795,22 +1718,22 @@ onMounted(async () => {
     hideCesiumCredits()
   }, 1000)
 
-  // 异步设置地形
-  console.log('🏔️ === 地形加载测试 ===')
-  try {
-    console.log('🔧 尝试加载世界地形...')
-    const terrainProvider = await Cesium.createWorldTerrainAsync()
-    viewer.value.terrainProvider = terrainProvider
-    console.log('✅ 世界地形加载成功:', terrainProvider)
-    console.log('🏔️ 地形提供者类型:', terrainProvider.constructor.name)
-  } catch (error) {
-    console.warn('❌ 世界地形加载失败:', error)
-    console.log('🔧 使用默认椭球体地形...')
-    // 如果世界地形加载失败，使用默认地形
-    viewer.value.terrainProvider = new Cesium.EllipsoidTerrainProvider()
-    console.log('✅ 默认地形设置成功:', viewer.value.terrainProvider)
-    console.log('🏔️ 默认地形类型:', viewer.value.terrainProvider.constructor.name)
-  }
+  // // 异步设置地形
+  // console.log('🏔️ === 地形加载测试 ===')
+  // try {
+  //   console.log('🔧 尝试加载世界地形...')
+  //   const terrainProvider = await Cesium.createWorldTerrainAsync()
+  //   viewer.value.terrainProvider = terrainProvider
+  //   console.log('✅ 世界地形加载成功:', terrainProvider)
+  //   console.log('🏔️ 地形提供者类型:', terrainProvider.constructor.name)
+  // } catch (error) {
+  //   console.warn('❌ 世界地形加载失败:', error)
+  //   console.log('🔧 使用默认椭球体地形...')
+  //   // 如果世界地形加载失败，使用默认地形
+  //   viewer.value.terrainProvider = new Cesium.EllipsoidTerrainProvider()
+  //   console.log('✅ 默认地形设置成功:', viewer.value.terrainProvider)
+  //   console.log('🏔️ 默认地形类型:', viewer.value.terrainProvider.constructor.name)
+  // }
 
   // 先创建鼠标点击事件处理器（只创建一次）
   createClickEventHandler()
@@ -1878,9 +1801,9 @@ const addLocationMarkers = () => {
         show: false
       },
 
-      // 使用新的红色定位图钉图标 - 正方形尺寸
+        // 使用新的红色定位图钉图标 - 正方形尺寸
       billboard: {
-        image: '/src/assets/nagv_red.png',
+        image: '/my_page/assets/nagv_red.png',
         width: 40,
         height: 40, // 设置成正方形，与Canvas图标大小一致
         heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
@@ -2315,6 +2238,9 @@ const resetView = () => {
 const closePopup = () => {
   selectedMarker.value = null
   showPopup.value = false
+
+  // 关闭弹窗时重置视角
+  resetToInitialView()
 }
 
 // 语言切换相关函数

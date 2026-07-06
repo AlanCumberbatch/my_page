@@ -12,7 +12,7 @@
           <span class="info-value">{{ localizedText(resumeData.basicInfo.organization) }}</span>
         </div>
         <div class="info-item">
-          <span class="info-label">{{ localizedText({ zh: '详细说明：', ja: '詳細説明：', en: 'Description: ' }) }}</span>
+          <span class="info-label">{{ localizedText({ zh: '地理位置：', ja: '地理位置：', en: 'Location: ' }) }}</span>
           <span class="info-value">{{ localizedText(marker.description) }}</span>
         </div>
         <!-- 图标字段已隐藏 -->
@@ -21,14 +21,23 @@
           <span class="info-label">{{ localizedText({ zh: '在籍期间：', ja: '在籍期間：', en: 'Period: ' }) }}</span>
           <span class="info-value">{{ localizedText(resumeData.basicInfo.period) }}</span>
         </div>
-        <!-- 东京标记点不显示专业领域和机构类型 -->
+        <!-- 东京标记点不显示此字段；大学显示"专业领域"，公司显示"工作方向" -->
         <div v-if="marker.id !== 'tokyo'" class="info-item">
-          <span class="info-label">{{ localizedText({ zh: '专业领域：', ja: '専攻分野：', en: 'Field: ' }) }}</span>
+          <span class="info-label">{{
+            marker.type === 'university'
+              ? localizedText({ zh: '专业领域：', ja: '専攻分野：', en: 'Field: ' })
+              : localizedText({ zh: '工作方向：', ja: '仕事の方向：', en: 'Work Direction: ' })
+          }}</span>
           <span class="info-value">{{ localizedText(resumeData.basicInfo.field) }}</span>
         </div>
         <div v-if="marker.id !== 'tokyo'" class="info-item">
           <span class="info-label">{{ localizedText({ zh: '机构类型：', ja: '機関種別：', en: 'Type: ' }) }}</span>
           <span class="info-value">{{ localizedText(resumeData.basicInfo.type) }}</span>
+        </div>
+        <!-- 取得学位 (仅大学显示) -->
+        <div v-if="marker.type === 'university' && resumeData.academic?.degree" class="info-item">
+          <span class="info-label">{{ localizedText({ zh: '取得学位：', ja: '取得学位：', en: 'Degree: ' }) }}</span>
+          <span class="info-value">{{ localizedText(resumeData.academic.degree) }}</span>
         </div>
         <div class="coord-item">
           <span class="coord-label">{{ localizedText({ zh: '坐标：', ja: '座標：', en: 'Coordinates: ' }) }}</span>
@@ -37,7 +46,67 @@
       </div>
     </div>
 
-    <!-- 学习项目 (仅东京显示) -->
+    <!-- 语言等级 (仅东京显示) -->
+    <div v-if="marker.id === 'tokyo' && resumeData.skills?.languages" class="info-section">
+      <div class="section-title">
+        <span class="title-icon">🌏</span>
+        <span class="title-text">{{ localizedText({ zh: '语言能力', ja: '言語能力', en: 'Language Skills' }) }}</span>
+      </div>
+      <div class="info-content">
+        <div class="language-list">
+          <div v-for="(language, index) in localizedArray(resumeData.skills.languages)" :key="index" class="language-item">
+            <span class="language-icon">{{ index === 0 ? '🇨🇳' : index === 1 ? '🇯🇵' : '🇬🇧' }}</span>
+            <span class="language-text">{{ language }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 个人项目链接 (仅东京显示) -->
+    <div v-if="marker.id === 'tokyo' && resumeData.links" class="info-section">
+      <div class="section-title">
+        <span class="title-icon">🔗</span>
+        <span class="title-text">{{ localizedText({ zh: '个人项目链接', ja: '個人プロジェクトリンク', en: 'Personal Project Links' }) }}</span>
+      </div>
+      <div class="info-content">
+        <div class="links-grid">
+          <!-- AWS博客 -->
+          <div v-if="resumeData.links.awsBlog" class="link-card">
+            <div class="link-header">
+              <span class="link-icon">📝</span>
+              <a :href="resumeData.links.awsBlog.url" target="_blank" class="link-title">
+                {{ localizedText(resumeData.links.awsBlog.title) }}
+              </a>
+            </div>
+            <p class="link-description">{{ localizedText(resumeData.links.awsBlog.description) }}</p>
+          </div>
+
+          <!-- 个人主页 -->
+          <div v-if="resumeData.links.personalPage" class="link-card">
+            <div class="link-header">
+              <span class="link-icon">🌐</span>
+              <a :href="resumeData.links.personalPage.url" target="_blank" class="link-title">
+                {{ localizedText(resumeData.links.personalPage.title) }}
+              </a>
+            </div>
+            <p class="link-description">{{ localizedText(resumeData.links.personalPage.description) }}</p>
+          </div>
+
+          <!-- GitHub -->
+          <div v-if="resumeData.links.github" class="link-card">
+            <div class="link-header">
+              <span class="link-icon">💻</span>
+              <a :href="resumeData.links.github.url" target="_blank" class="link-title">
+                {{ localizedText(resumeData.links.github.title) }}
+              </a>
+            </div>
+            <p class="link-description">{{ localizedText(resumeData.links.github.description) }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 学习项目 (仅东京显示) - 已被projects替代，此部分可保留或删除 -->
     <div v-if="resumeData.learningProjects && Array.isArray(resumeData.learningProjects)" class="info-section">
       <div class="section-title">
         <span class="title-icon">📚</span>
@@ -63,31 +132,6 @@
       </div>
     </div>
 
-    <!-- 学業成績・資格 (仅大学显示) -->
-    <div v-if="marker.type === 'university'" class="info-section">
-      <div class="section-title">
-        <span class="title-icon">🎓</span>
-        <span class="title-text">{{ localizedText({ zh: '学业成绩・资格', ja: '学業成績・資格', en: 'Academic Performance & Qualifications' }) }}</span>
-      </div>
-      <div class="info-content">
-        <div class="info-item">
-          <span class="info-label">GPA：</span>
-          <span class="info-value">{{ localizedText(resumeData.academic?.gpa) }}</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">{{ localizedText({ zh: '取得学位：', ja: '取得学位：', en: 'Degree: ' }) }}</span>
-          <span class="info-value">{{ localizedText(resumeData.academic?.degree) }}</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">{{ localizedText({ zh: '毕业论文：', ja: '卒業論文：', en: 'Thesis: ' }) }}</span>
-          <span class="info-value">{{ localizedText(resumeData.academic?.thesis) }}</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">{{ localizedText({ zh: '相关资格：', ja: '関連資格：', en: 'Qualifications: ' }) }}</span>
-          <span class="info-value">{{ localizedText(resumeData.academic?.qualifications) }}</span>
-        </div>
-      </div>
-    </div>
 
     <!-- 主要活動・実績 (东京标记点不显示) -->
     <div v-if="marker.id !== 'tokyo'" class="info-section">
@@ -178,7 +222,16 @@
               <div class="project-name">{{ localizedText(project.name) }}</div>
               <div class="project-period">{{ localizedText(project.period) }}</div>
             </div>
-            <div class="project-role">
+            <!-- 项目类型标签 (仅东京显示) -->
+            <div v-if="marker.id === 'tokyo' && project.type" class="project-type-badge">
+              <span class="type-badge" :class="`type-${project.type}`">
+                {{ project.type === 'personal' ? localizedText({ zh: '个人项目', ja: '個人プロジェクト', en: 'Personal' }) :
+                   project.type === 'work' ? localizedText({ zh: '工作项目', ja: '業務プロジェクト', en: 'Work' }) :
+                   localizedText({ zh: '学习项目', ja: '学習プロジェクト', en: 'Learning' }) }}
+              </span>
+            </div>
+
+            <div v-if="project.role" class="project-role">
               <span class="role-label">{{ localizedText({ zh: '角色：', ja: '役割：', en: 'Role: ' }) }}</span>
               <span class="role-value">{{ localizedText(project.role) }}</span>
             </div>
@@ -190,7 +243,22 @@
               <span class="tech-label">{{ localizedText({ zh: '技术栈：', ja: '技術スタック：', en: 'Technologies: ' }) }}</span>
               <span class="tech-value">{{ localizedText(project.technologies) }}</span>
             </div>
-            <div class="project-achievements">
+
+            <!-- 项目特性 (新增) -->
+            <div v-if="project.features" class="project-features">
+              <div class="feature-title">
+                <span class="feature-icon">⭐</span>
+                <span class="feature-text">{{ localizedText({ zh: '主要特性', ja: '主な機能', en: 'Key Features' }) }}</span>
+              </div>
+              <div class="feature-list">
+                <div v-for="(feature, featIndex) in localizedArray(project.features)" :key="featIndex" class="feature-item">
+                  {{ feature }}
+                </div>
+              </div>
+            </div>
+
+            <!-- 项目成果 -->
+            <div v-if="project.achievements" class="project-achievements">
               <div class="achievement-title">
                 <span class="achievement-icon">✨</span>
                 <span class="achievement-text">{{ localizedText({ zh: '项目成果', ja: 'プロジェクト成果', en: 'Project Achievements' }) }}</span>
@@ -200,6 +268,18 @@
                   {{ achievement }}
                 </div>
               </div>
+            </div>
+
+            <!-- 项目链接 (新增) -->
+            <div v-if="project.link || project.github" class="project-links">
+              <a v-if="project.link" :href="project.link" target="_blank" class="project-link-btn">
+                <span class="link-icon">🌐</span>
+                <span class="link-text">{{ localizedText({ zh: '访问项目', ja: 'プロジェクトを見る', en: 'View Project' }) }}</span>
+              </a>
+              <a v-if="project.github" :href="project.github" target="_blank" class="project-link-btn github">
+                <span class="link-icon">💻</span>
+                <span class="link-text">{{ localizedText({ zh: '查看代码', ja: 'コードを見る', en: 'View Code' }) }}</span>
+              </a>
             </div>
           </div>
         </div>
@@ -221,8 +301,8 @@
       </div>
     </div>
 
-    <!-- 技能分类展示 -->
-    <div v-if="resumeData.skills && typeof resumeData.skills === 'object' && !Array.isArray(resumeData.skills)" class="info-section">
+    <!-- 技能分类展示 (隐藏) -->
+    <div v-if="false && resumeData.skills && typeof resumeData.skills === 'object' && !Array.isArray(resumeData.skills)" class="info-section">
       <div class="section-title">
         <span class="title-icon">💻</span>
         <span class="title-text">{{ localizedText({ zh: '技能分类', ja: 'スキル分類', en: 'Skills Categories' }) }}</span>
@@ -320,18 +400,21 @@
       </div>
       <div class="info-content">
         <div class="career-goals">
-          <div class="goal-item">
-            <span class="goal-label">{{ localizedText({ zh: '目标岗位：', ja: '目標ポジション：', en: 'Target Position: ' }) }}</span>
-            <span class="goal-value">{{ localizedText(resumeData.careerGoals.target) }}</span>
+          <!-- 目标岗位列表 -->
+          <div class="goal-positions">
+            <div v-for="(position, index) in localizedArray(resumeData.careerGoals.positions)" :key="index" class="position-badge">
+              <span class="badge-icon">{{ index === 0 ? '💻' : index === 1 ? '🌍' : '☁️' }}</span>
+              <span class="badge-text">{{ position }}</span>
+            </div>
           </div>
-          <div class="goal-item">
+          <!-- <div class="goal-item">
             <span class="goal-label">{{ localizedText({ zh: '公司类型：', ja: '会社タイプ：', en: 'Company Type: ' }) }}</span>
             <span class="goal-value">{{ localizedText(resumeData.careerGoals.companyType) }}</span>
           </div>
           <div class="goal-item">
             <span class="goal-label">{{ localizedText({ zh: '经验要求：', ja: '経験要件：', en: 'Experience Requirement: ' }) }}</span>
             <span class="goal-value">{{ localizedText(resumeData.careerGoals.experience) }}</span>
-          </div>
+          </div> -->
         </div>
       </div>
     </div>
@@ -476,7 +559,7 @@ interface Marker {
       achievements: { zh: string[]; ja: string[]; en: string[] }
     }
     careerGoals?: {
-      target: { zh: string; ja: string; en: string }
+      positions: { zh: string[]; ja: string[]; en: string[] }
       companyType: { zh: string; ja: string; en: string }
       experience: { zh: string; ja: string; en: string }
     }
@@ -893,8 +976,45 @@ const getContributionsObject = () => {
 
 .goal-item {
   display: flex;
-  margin: 8px 0;
-  align-items: flex-start;
+  flex-direction: column;
+  margin: 12px 0;
+}
+
+.goal-positions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.position-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: linear-gradient(135deg, v-bind('colors.accent.orange'), #ff8c5a);
+  color: v-bind('colors.neutral.white');
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 2px solid v-bind('colors.rgba.orange[50]');
+  box-shadow: 0 2px 8px v-bind('colors.rgba.orange[30]');
+  transition: all 0.3s ease;
+}
+
+.position-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px v-bind('colors.rgba.orange[50]');
+  filter: brightness(1.1);
+}
+
+.position-badge .badge-icon {
+  font-size: 16px;
+}
+
+.position-badge .badge-text {
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .goal-label {
@@ -1034,6 +1154,243 @@ const getContributionsObject = () => {
   .project-item {
     font-size: 13px;
     padding: 6px 10px;
+  }
+}
+
+/* 语言列表样式 */
+.language-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.language-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+  background: v-bind('colors.rgba.lightPurple[10]');
+  border-radius: 8px;
+  border-left: 3px solid v-bind('colors.accent.orange');
+  transition: all 0.3s ease;
+}
+
+.language-item:hover {
+  background: v-bind('colors.rgba.lightPurple[20]');
+  transform: translateX(4px);
+}
+
+.language-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.language-text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: v-bind('colors.neutral.white');
+}
+
+/* 个人项目链接样式 */
+.links-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.link-card {
+  padding: 14px;
+  background: linear-gradient(135deg, v-bind('colors.rgba.darkBlue[80]'), v-bind('colors.rgba.darkNavy[80]'));
+  border-radius: 10px;
+  border: 1px solid v-bind('colors.rgba.orange[30]');
+  transition: all 0.3s ease;
+}
+
+.link-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px v-bind('colors.rgba.darkBlue[40]');
+  border-color: v-bind('colors.accent.orange');
+}
+
+.link-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.link-icon {
+  font-size: 18px;
+}
+
+.link-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: v-bind('colors.accent.orange');
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.link-title:hover {
+  color: v-bind('colors.neutral.white');
+  text-decoration: underline;
+}
+
+.link-description {
+  font-size: 13px;
+  color: v-bind('colors.neutral.lightGray');
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* 项目类型标签样式 */
+.project-type-badge {
+  margin-bottom: 10px;
+}
+
+.type-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: v-bind('colors.neutral.white');
+}
+
+.type-badge.type-personal {
+  background: linear-gradient(135deg, #ff6b35, #ff8c5a);
+}
+
+.type-badge.type-work {
+  background: linear-gradient(135deg, #0f3460, #1a4d7a);
+}
+
+.type-badge.type-learning {
+  background: linear-gradient(135deg, #6a4c93, #8b6bb7);
+}
+
+/* 项目特性样式 */
+.project-features {
+  margin-top: 12px;
+}
+
+.feature-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: v-bind('colors.accent.orange');
+  font-size: 14px;
+}
+
+.feature-icon {
+  font-size: 14px;
+}
+
+.feature-text {
+  font-size: 14px;
+}
+
+.feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.feature-item {
+  padding: 6px 10px;
+  background: v-bind('colors.rgba.lightPurple[10]');
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: v-bind('colors.neutral.white');
+  position: relative;
+  padding-left: 24px;
+}
+
+.feature-item::before {
+  content: '✓';
+  position: absolute;
+  left: 8px;
+  color: v-bind('colors.accent.orange');
+  font-weight: bold;
+}
+
+/* 项目链接按钮样式 */
+.project-links {
+  margin-top: 14px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.project-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, v-bind('colors.accent.orange'), #ff8c5a);
+  color: v-bind('colors.neutral.white');
+  text-decoration: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+}
+
+.project-link-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px v-bind('colors.rgba.orange[40]');
+  filter: brightness(1.1);
+}
+
+.project-link-btn.github {
+  background: linear-gradient(135deg, #0f3460, #1a4d7a);
+}
+
+.project-link-btn.github:hover {
+  box-shadow: 0 4px 12px v-bind('colors.rgba.darkBlue[40]');
+}
+
+.project-link-btn .link-icon {
+  font-size: 16px;
+}
+
+.project-link-btn .link-text {
+  font-size: 13px;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .links-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .language-item {
+    padding: 8px;
+  }
+
+  .language-icon {
+    font-size: 18px;
+  }
+
+  .language-text {
+    font-size: 13px;
+  }
+
+  .link-card {
+    padding: 12px;
+  }
+
+  .project-links {
+    flex-direction: column;
+  }
+
+  .project-link-btn {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>

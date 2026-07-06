@@ -1,10 +1,33 @@
 <!DOCTYPE html>
-<html lang="">
+<html lang="ja">
   <head>
     <meta charset="UTF-8">
-    <link rel="icon" href="/favicon.ico">
+
+    <!-- 网站图标 - 使用PNG格式避免缓存问题 -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-new.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-new.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon-new.png">
+    <link rel="shortcut icon" type="image/png" href="/favicon-new.png">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vite App</title>
+
+    <!-- 页面标题 -->
+    <title>Noah_3D</title>
+
+    <!-- SEO元数据 -->
+    <meta name="description" content="Noah的个人简历网站 - 使用Cesium 3D地球展示个人经历、技能和项目 | Noahの個人履歴書サイト - Cesium 3D地球で個人経歴・スキル・プロジェクトを表示">
+    <meta name="keywords" content="Noah, 简历, 履歴書, Resume, Cesium, 3D, AWS, Vue.js, Frontend Developer">
+    <meta name="author" content="Noah">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://alancumberbatch.github.io/my_page/">
+    <meta property="og:title" content="Noah的3D简历 | 3D履歴書">
+    <meta property="og:description" content="使用Cesium 3D地球展示个人经历、技能和项目">
+
+    <!-- 预加载 Cesium -->
+    <link rel="preload" href="/my_page/cesium/Cesium.js" as="script">
+    <link rel="preload" href="/my_page/cesium/Widgets/widgets.css" as="style">
   </head>
   <body>
     <div id="app"></div>
